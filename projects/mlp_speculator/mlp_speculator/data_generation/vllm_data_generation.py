@@ -150,7 +150,10 @@ def save_as_huggingface_dataset(prompts, responses, output_path):
 
 def generate(args):
     # Load dataset
-    os.makedirs(args.output_dataset_path, exist_ok=True)
+    if os.path.dirname(args.output_dataset_path):
+        os.makedirs(os.path.dirname(args.output_dataset_path), exist_ok=True)
+    f = open(f"{args.output_dataset_path}", "w")
+
     dataset = load_hf_dataset(args.hf_dataset)
     start = args.cur_split * len(dataset) // args.total_split
     end = (args.cur_split + 1) * len(dataset) // args.total_split
@@ -196,13 +199,10 @@ def generate(args):
     outputs = llm.generate(
         sampling_params=sampling_params, prompt_token_ids=all_prompts
     )
-    with open(
-        f"{args.output_dataset_path}/{args.cur_split}_{args.total_split}.jsonl", "w"
-    ) as f:
-        for o in outputs:
-            new_data = {"input": o.prompt_token_ids, "output": o.outputs[0].token_ids}
-            f.write(json.dumps(new_data) + "\n")
-            f.flush()
+    for o in outputs:
+        new_data = {"input": o.prompt_token_ids, "output": o.outputs[0].token_ids}
+        f.write(json.dumps(new_data) + "\n")
+        f.flush()
 
 
 # Main function to process the dataset and generate responses in batches
